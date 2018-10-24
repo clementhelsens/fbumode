@@ -70,8 +70,6 @@ kde.set_bandwidth(bw_method='silverman')
 y2 = kde(xs)
 kde.set_bandwidth(bw_method=kde.factor / 3.)
 y3 = kde(xs)
-kde.set_bandwidth(bw_method=1.0)
-y4 = kde(xs)
 
 y1_danilo = kde_danilo.evaluate(xs)
 
@@ -81,7 +79,6 @@ ax.plot(x1, np.ones(x1.shape) / (4. * x1.size), 'bo',label='Data points (rescale
 ax.plot(xs, y1, label='Scott (default)')
 ax.plot(xs, y2, label='Silverman')
 ax.plot(xs, y3, label='Const (1/3 * Silverman)')
-#ax.plot(xs, y4, label='Const (1.0)')
 ax.plot(xs, y1_danilo, ':', label='Scott (by Danilo)')
 ax.legend()
 plt.show()
