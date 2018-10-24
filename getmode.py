@@ -34,10 +34,10 @@ def mpdf(x, args):
       A = np.concatenate((np.tile(mean[:LT,:], (1,x.shape[1])),x), axis = 0)
     p = -pdf.logpdf(A)
     p = np.asarray(p)
-    dp = -pdf.jac(A)[LT:,:]
-    dp = np.asarray(dp)
+    #dp = -pdf.jac(A)[LT:,:]
+    #dp = np.asarray(dp)
     #print ('==============  ',p,dp)
-    return p, dp
+    return p #, dp
 
 trace=np.load('OutDir/tests/FullTrace.npy')
 nuistrace=np.load('OutDir/tests/FullTrace_NP.npy')
@@ -79,11 +79,11 @@ class GKDE:
     self.invcov = np.linalg.inv(self.cov)
     # multiply cov by scotts factor^2 and invcov by scotts factor^-2
     # this is the default in NumPy
-    #self.cov *= np.power(self.n, -2./(self.d+4.0))
-    #self.invcov *= np.power(self.n, 2./(self.d+4.0))
+    self.cov *= np.power(self.n, -2./(self.d+4.0))
+    self.invcov *= np.power(self.n, 2./(self.d+4.0))
     # this is the Silverman one
-    self.cov *= np.power(self.n*(self.d+2)/4.0, -2./(self.d+4.0))
-    self.invcov *= np.power(self.n*(self.d+2)/4.0, 2./(self.d+4.0))
+    #self.cov *= np.power(self.n*(self.d+2)/4.0, -2./(self.d+4.0))
+    #self.invcov *= np.power(self.n*(self.d+2)/4.0, 2./(self.d+4.0))
     # to be conservative, do not scale the covariance ... assume a unit covariance in all dimensions
     self.norm = np.sqrt(np.linalg.det(2*np.pi*self.cov)) * self.n
 
@@ -169,7 +169,7 @@ print ('PDF S+dS  ',mpdf(S[LT:,:]+dS[LT:,:],args)[0])
 
 #res = optimize.minimize(mpdf, S, args = args, jac = True, bounds = bounds, method='L-BFGS-B', options={'ftol':10e-20,'gtol':10e-18,'maxiter': 500, 'disp': True})
 # ROOT uses gtol (it calls it EDM) 1e-3
-res = optimize.minimize(mpdf, np.zeros( (LNP, 1), dtype = np.float64 ), args = args, jac = True, method='L-BFGS-B', options={'maxiter': 200, 'disp': True, 'eps': 1e-10})
+res = optimize.minimize(mpdf, np.zeros( (LNP, 1), dtype = np.float64 ), args = args, jac = False, method='L-BFGS-B', options={'maxiter': 200, 'disp': True})
 print('===================')  
 print(res)
 print('===================')  
