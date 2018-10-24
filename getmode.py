@@ -32,11 +32,12 @@ def mpdf(x, args):
     #print ('==============  ',p,dp)
     return p, dp
 
-trace=np.load('OutDir/tests/FullTrace.npy')
-nuistrace=np.load('OutDir/tests/FullTrace_NP.npy')
+trace=np.load('OutDir/tests/FullTrace_asimov.npy')
+nuistrace=np.load('OutDir/tests/FullTrace_asimov_NP.npy')
 nuistrace = nuistrace.tolist()
 
-d = len(trace) + len(nuistrace)
+#d = len(trace) + len(nuistrace)
+d = len(nuistrace)
 r = len(trace[0])
 
 value = np.zeros( (d, r) )
@@ -44,22 +45,25 @@ S = np.zeros( (d, 1) )
 dS = np.zeros( (d, 1) )
 localnuis = []
 
-for i in range(0, len(trace)):
-    value[i, :] = copy.deepcopy(trace[i])
-    m = np.mean(trace[i])
-    s = np.std(trace[i])
-    S[i, 0] = m
-    dS[i, 0] = s
+#for i in range(0, len(trace)):
+#    value[i, :] = copy.deepcopy(trace[i])
+#    m = np.mean(trace[i])
+#    s = np.std(trace[i])
+#    S[i, 0] = m
+#    dS[i, 0] = s
 
 
 i=0
 for nuis in nuistrace: 
     localnuis.append(nuis)
-    value[len(trace) + i, :] = copy.deepcopy(nuistrace[nuis])
+#    value[len(trace) + i, :] = copy.deepcopy(nuistrace[nuis])
+    value[i, :] = copy.deepcopy(nuistrace[nuis])
     m = np.mean(nuistrace[nuis])
     s = np.std(nuistrace[nuis])
-    S[len(trace) + i, 0] = m
-    dS[len(trace) + i, 0] = s
+#    S[len(trace) + i, 0] = m
+#    dS[len(trace) + i, 0] = s
+    S[i, 0] = m
+    dS[i, 0] = s
     i+=1
 
 
@@ -133,7 +137,8 @@ pdf = GKDE(value)
 #pdf = stats.gaussian_kde(value)
 
 bounds = []
-for i in range(0, len(trace)+len(nuistrace)):
+#for i in range(0, len(trace)+len(nuistrace)):
+for i in range(0, len(nuistrace)):
     bounds.append((S[i, 0]-5*dS[i,0], S[i,0]+5*dS[i,0]))
 print ('bounds  ',bounds)
 args = {'pdf': pdf}
@@ -155,13 +160,13 @@ print ('PDF S+dS  ',mpdf(S+dS,args))
 print ('PDF res x ',mpdf(res.x,args))
 
 ####do plots
-for i in range(0, len(trace)):
-    plt.hist(trace[i], 50)
-    plt.axvline(res.x[i], color = 'black')
-    plt.savefig('truthbin%i.png'%int(i))
+#for i in range(0, len(trace)):
+#    plt.hist(trace[i], 50)
+#    plt.axvline(res.x[i], color = 'black')
+#    plt.savefig('truthbin%i.png'%int(i))
 
-    print (res.x[i])
-    plt.close()
+#    print (res.x[i])
+#    plt.close()
 
 #i=0
 #for nuis in nuistrace: 
@@ -175,7 +180,7 @@ for i in range(0, len(trace)):
 
 
 import ROOT as r
-#import AtlasStyle
+import AtlasStyle
 from array import array
 
 
@@ -220,7 +225,8 @@ for nuis in nuistrace:
     yy_err[i] = 1.
     ny[i] = N_nuis-i
     ny_err[i] = 0.
-    nx[i] = res.x[len(trace)+i]
+#    nx[i] = res.x[len(trace)+i]
+    nx[i] = res.x[i]
     nx_err[i] = 0
     ny_post[i] = N_nuis-i-0.15
     ny_err_post[i] = 0.
