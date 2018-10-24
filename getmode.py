@@ -29,7 +29,7 @@ def mpdf(x, args):
     p = np.asarray(p)
     dp = -pdf.jac(x)
     dp = np.asarray(dp)
-    print ('==============  ',p,dp)
+    #print ('==============  ',p,dp)
     return p, dp
 
 trace=np.load('OutDir/tests/FullTrace.npy')
