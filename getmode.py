@@ -29,7 +29,7 @@ def mpdf(x, args):
     p = np.asarray(p)
     dp = -pdf.jac(x)
     dp = np.asarray(dp)
-    print ('==============  ',p,dp)
+    #print ('==============  ',p,dp)
     return p, dp
 
 trace=np.load('OutDir/tests/FullTrace.npy')
@@ -89,11 +89,9 @@ class GKDE:
       diff = self.value - points[:, i, np.newaxis]
       tdiff = np.matmul(self.invcov, diff)
       energy = np.sum(diff * tdiff, axis = 0)*0.5
-      result[i] = np.sum(np.exp(-energy), axis = 0)
-      if result[i] == 0:
-        result[i] = -1e20
-      else:
-        result[i] = np.log(result[i])
+      maxE = np.amax(-energy)
+      result[i] = np.sum(np.exp(-energy - maxE), axis = 0)
+      result[i] = maxE + np.log(result[i])
     return result
 
   # return array with derivative of the function w.r.t. x_i, where i = 1..d, at points
@@ -110,14 +108,22 @@ class GKDE:
     result_diff = np.zeros((d,m), dtype = np.float64)
     for i in range(m):
       diff = self.value - points[:, i, np.newaxis]
+      #print("diff shape: ", diff.shape)
       tdiff = np.matmul(self.invcov, diff)
+      #print("invcov shape: ", self.invcov.shape)
+      #print("tdiff shape: ", tdiff.shape)
       energy = np.sum(diff * tdiff, axis = 0)*0.5
-      result[0, i] = np.sum(np.exp(-energy), axis = 0)
+      #print("energy shape: ", energy.shape)
+      maxE = np.amax(-energy)
+      #print("max energy: ", maxE)
+      result[0, i] = np.sum(np.exp(-energy - maxE), axis = 0)
       for k in range(d):
-        diff_energy = -0.5*tdiff[k,0] - 0.5*np.sum(diff[:, i] * self.invcov[k, :], axis = 0)
-        result_diff[k, i] = np.sum(-np.exp(-energy)*diff_energy, axis = 0)
-      if result[0,i] == 0:
-        result[0,i] = 1e-20
+        diff_energy = -0.5*tdiff[k,:] - 0.5*np.sum(diff * np.tile(self.invcov[:, k, np.newaxis], (1, self.n) ), axis = 0)
+        #print("tdiff[k,:] shape", tdiff[k,:].shape)
+        #print("diff shape", diff.shape)
+        #print("invcov tiled shape", np.tile(self.invcov[:, k, np.newaxis], (1, self.n) ).shape)
+        #print("diff_energy", k, " shape ", diff_energy.shape)
+        result_diff[k, i] = np.sum(-np.exp(-energy - maxE)*diff_energy, axis = 0)
     return result_diff/result
 
 pdf = GKDE(value)
@@ -132,10 +138,13 @@ for i in range(0, len(trace)+len(nuistrace)):
 print ('bounds  ',bounds)
 args = {'pdf': pdf}
 print("Start minimization with %s = %f, diff = %s" % (str(S), mpdf(S, args)[0], mpdf(S, args)[1]))
+#print("Start minimization with %s = %f" % (str(S), mpdf(S, args)))
 print("Start minimization with dS %s" % (str(dS)))
 
 
-res = optimize.minimize(mpdf, S, args = args, jac = True, bounds = bounds, method='L-BFGS-B', options={'ftol':10e-20,'gtol':10e-18,'maxiter': 500, 'disp': True})
+#res = optimize.minimize(mpdf, S, args = args, jac = True, bounds = bounds, method='L-BFGS-B', options={'ftol':10e-20,'gtol':10e-18,'maxiter': 500, 'disp': True})
+# ROOT uses gtol (it calls it EDM) 1e-3
+res = optimize.minimize(mpdf, S, args = args, jac = True, bounds = bounds, method='L-BFGS-B', options={'gtol': 1e-3, 'maxiter': 500, 'disp': True})
 print('===================')  
 print(res)
 print('===================')  
@@ -166,7 +175,7 @@ for i in range(0, len(trace)):
 
 
 import ROOT as r
-import AtlasStyle
+#import AtlasStyle
 from array import array
 
 
