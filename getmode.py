@@ -180,32 +180,51 @@ print('===================')
 print(localnuis)
 print ('PDF res x ',mpdf(res.x,args))
 
+import seaborn as sns
+fig = plt.figure( figsize = (10, 6) )
+sns.distplot( value[LT:LT+1, :])
+plt.show()
+
+fig = plt.figure( figsize = (10, 6) )
+x = np.reshape(np.linspace(-2, 2, 100), (1, -1) )
+A = np.concatenate((np.tile(S[:LT,:], (1,x.shape[1])),x), axis = 0)
+print(A.shape)
+y = np.reshape(np.exp(pdf.logpdf(A)+np.log(1e20)), (1, -1) )
+x = np.reshape(x, (-1))
+y = np.reshape(y, (-1))
+print(x, y)
+plt.plot(x, y, '-')
+plt.show()
+
+
 ####do plots
-for i in range(0, len(trace)):
-    plt.hist(trace[i], 50)
+#for i in range(0, len(trace)):
+#    plt.hist(trace[i], 50)
+#    plt.axvline(res.x[i], color = 'black')
+#    plt.savefig('truthbin%i.png'%int(i))
+
+#    print (res.x[i])
+#    plt.close()
+
+i=0
+for nuis in nuistrace: 
+    plt.hist(nuistrace[nuis], 50)
+    #plt.axvline(res.x[len(trace)+i], color = 'black')
     plt.axvline(res.x[i], color = 'black')
-    plt.savefig('truthbin%i.png'%int(i))
-
-    print (res.x[i])
-    plt.close()
-
-#i=0
-#for nuis in nuistrace: 
-#    plt.hist(nuistrace[nuis], 50)
-#    plt.axvline(res.x[len(trace)+i], color = 'black')
-#    plt.savefig('nuispar_%s.png'%nuis)
+    plt.savefig('nuispar_%s.png'%nuis)
  #   print (res.x[len(trace)+i])
     
-#    plt.close()
-#    i+=1
+    plt.close()
+    i+=1
 
-
+    
 import ROOT as r
-#import AtlasStyle
+import AtlasStyle
 from array import array
 
 
 r.gROOT.SetStyle("ATLAS")
+r.gROOT.SetBatch(1)
 r.gStyle.SetPadTopMargin(0.06)
 r.gStyle.SetPadBottomMargin(0.08)
 r.gStyle.SetPadLeftMargin(0.05)
