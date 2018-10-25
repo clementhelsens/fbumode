@@ -25,15 +25,24 @@ import matplotlib.pyplot as plt
 #__________________________________________________________
 def mpdf(x, args):
     pdf = args['pdf']
-    p = -pdf.logpdf(x)
+    mean = args['mean']
+    LT = args['LT']
+    LNP = args['LNP']
+    if len(x.shape) == 1:
+      A = np.concatenate( (mean[:LT,0], x), axis = 0)
+    else:
+      A = np.concatenate((np.tile(mean[:LT,:], (1,x.shape[1])),x), axis = 0)
+    p = -pdf.logpdf(A)
     p = np.asarray(p)
-    dp = -pdf.jac(x)
+    dp = -pdf.jac(A)[LT:,:]
     dp = np.asarray(dp)
     #print ('==============  ',p,dp)
     return p, dp
 
 trace=np.load('OutDir/tests/FullTrace_asimov.npy')
 nuistrace=np.load('OutDir/tests/FullTrace_asimov_NP.npy')
+trace=np.load('OutDir/tests/FullTrace.npy')
+nuistrace=np.load('OutDir/tests/FullTrace_NP.npy')
 nuistrace = nuistrace.tolist()
 
 #d = len(trace) + len(nuistrace)
@@ -71,12 +80,17 @@ for nuis in nuistrace:
 class GKDE:
   def __init__(self, value):
     self.value = copy.deepcopy(np.atleast_2d(value.astype(np.float64)))
-    self.d, self.n = value.shape
-    self.cov = np.cov(value, rowvar = 1, bias = False)
+    self.d, self.n = self.value.shape
+    self.cov = np.atleast_2d(np.cov(value, rowvar = 1, bias = False))
     self.invcov = np.linalg.inv(self.cov)
     # multiply cov by scotts factor^2 and invcov by scotts factor^-2
-    self.cov *= np.power(self.n, -2./(self.d+4.0))
-    self.invcov *= np.power(self.n, 2./(self.d+4.0))
+    # this is the default in NumPy
+    #self.cov *= np.power(self.n, -2./(self.d+4.0))
+    #self.invcov *= np.power(self.n, 2./(self.d+4.0))
+    # this is the Silverman one
+    self.cov *= np.power(self.n*(self.d+2)/4.0, -2./(self.d+4.0))
+    self.invcov *= np.power(self.n*(self.d+2)/4.0, 2./(self.d+4.0))
+    # to be conservative, do not scale the covariance ... assume a unit covariance in all dimensions
     self.norm = np.sqrt(np.linalg.det(2*np.pi*self.cov)) * self.n
 
   def logpdf(self, points):
@@ -96,7 +110,7 @@ class GKDE:
       maxE = np.amax(-energy)
       result[i] = np.sum(np.exp(-energy - maxE), axis = 0)
       result[i] = maxE + np.log(result[i])
-    return result
+    return result - np.log(self.norm)
 
   # return array with derivative of the function w.r.t. x_i, where i = 1..d, at points
   def jac(self, points):
@@ -130,6 +144,7 @@ class GKDE:
         result_diff[k, i] = np.sum(-np.exp(-energy - maxE)*diff_energy, axis = 0)
     return result_diff/result
 
+print("value", value.shape)
 pdf = GKDE(value)
 
 
@@ -138,25 +153,34 @@ pdf = GKDE(value)
 
 bounds = []
 #for i in range(0, len(trace)+len(nuistrace)):
-for i in range(0, len(nuistrace)):
-    bounds.append((S[i, 0]-5*dS[i,0], S[i,0]+5*dS[i,0]))
-print ('bounds  ',bounds)
-args = {'pdf': pdf}
-print("Start minimization with %s = %f, diff = %s" % (str(S), mpdf(S, args)[0], mpdf(S, args)[1]))
-#print("Start minimization with %s = %f" % (str(S), mpdf(S, args)))
-print("Start minimization with dS %s" % (str(dS)))
+#    bounds.append((S[i, 0]-1*dS[i,0], S[i,0]+1*dS[i,0]))
+#for i in range(len(trace),len(nuistrace)):
+#    bounds.append((S[i, 0]-1*dS[i,0], S[i,0]+1*dS[i,0]))
+#print ('bounds  ',bounds)
 
+# keep those first LT variables fixed in the mean
+LT = trace.shape[0]
+LNP = len(nuistrace)
+print("LT",LT)
+print("LNP", LNP)
+args = {'pdf': pdf, 'LT': LT, 'LNP': LNP, 'mean': S}
+print("Start minimization with %s = %s" % (str(S), mpdf(S[LT:,:], args)[0]))
+
+#print("Start minimization with %s = %f" % (str(S), mpdf(S, args)))
+#print("Start minimization with dS %s" % (str(dS)))
+
+print ('PDF zero  ',mpdf(np.zeros( (LNP, 1), dtype = np.float64 ),args)[0])
+print ('PDF S     ',mpdf(S[LT:,:],args)[0])
+print ('PDF S-dS  ',mpdf(S[LT:,:]-dS[LT:,:],args)[0])
+print ('PDF S+dS  ',mpdf(S[LT:,:]+dS[LT:,:],args)[0])
 
 #res = optimize.minimize(mpdf, S, args = args, jac = True, bounds = bounds, method='L-BFGS-B', options={'ftol':10e-20,'gtol':10e-18,'maxiter': 500, 'disp': True})
 # ROOT uses gtol (it calls it EDM) 1e-3
-res = optimize.minimize(mpdf, S, args = args, jac = True, bounds = bounds, method='L-BFGS-B', options={'gtol': 1e-3, 'maxiter': 500, 'disp': True})
+res = optimize.minimize(mpdf, np.zeros( (LNP, 1), dtype = np.float64 ), args = args, jac = True, method='L-BFGS-B', options={'maxiter': 200, 'disp': True, 'eps': 1e-10})
 print('===================')  
 print(res)
 print('===================')  
 print(localnuis)
-print ('PDF S     ',mpdf(S,args))
-print ('PDF S-dS  ',mpdf(S-dS,args))
-print ('PDF S+dS  ',mpdf(S+dS,args))
 print ('PDF res x ',mpdf(res.x,args))
 
 ####do plots
@@ -225,7 +249,7 @@ for nuis in nuistrace:
     yy_err[i] = 1.
     ny[i] = N_nuis-i
     ny_err[i] = 0.
-#    nx[i] = res.x[len(trace)+i]
+    #nx[i] = res.x[len(trace)+i]
     nx[i] = res.x[i]
     nx_err[i] = 0
     ny_post[i] = N_nuis-i-0.15
