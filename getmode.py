@@ -189,9 +189,11 @@ fig = plt.figure( figsize = (10, 6) )
 x = np.reshape(np.linspace(-2, 2, 100), (1, -1) )
 A = np.concatenate((np.tile(S[:LT,:], (1,x.shape[1])),x), axis = 0)
 print(A.shape)
-y = np.reshape(np.exp(pdf.logpdf(A)), (1, -1) )
+y = np.reshape(np.exp(pdf.logpdf(A)+np.log(1e20)), (1, -1) )
+x = np.reshape(x, (-1))
+y = np.reshape(y, (-1))
 print(x, y)
-plt.plot(x, y)
+plt.plot(x, y, '-')
 plt.show()
 
 
