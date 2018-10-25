@@ -39,14 +39,15 @@ def mpdf(x, args):
     #print ('==============  ',p,dp)
     return p #, dp
 
-trace=np.load('OutDir/tests/FullTrace_asimov.npy')
-nuistrace=np.load('OutDir/tests/FullTrace_asimov_NP.npy')
 trace=np.load('OutDir/tests/FullTrace.npy')
 nuistrace=np.load('OutDir/tests/FullTrace_NP.npy')
+
+trace=np.load('OutDir/tests/FullTrace_asimov.npy')
+nuistrace=np.load('OutDir/tests/FullTrace_asimov_NP.npy')
+
 nuistrace = nuistrace.tolist()
 
-#d = len(trace) + len(nuistrace)
-d = len(nuistrace)
+d = len(trace) + len(nuistrace)
 r = len(trace[0])
 
 value = np.zeros( (d, r) )
@@ -54,25 +55,22 @@ S = np.zeros( (d, 1) )
 dS = np.zeros( (d, 1) )
 localnuis = []
 
-#for i in range(0, len(trace)):
-#    value[i, :] = copy.deepcopy(trace[i])
-#    m = np.mean(trace[i])
-#    s = np.std(trace[i])
-#    S[i, 0] = m
-#    dS[i, 0] = s
+for i in range(0, len(trace)):
+    value[i, :] = copy.deepcopy(trace[i])
+    m = np.mean(trace[i])
+    s = np.std(trace[i])
+    S[i, 0] = m
+    dS[i, 0] = s
 
 
 i=0
 for nuis in nuistrace: 
     localnuis.append(nuis)
-#    value[len(trace) + i, :] = copy.deepcopy(nuistrace[nuis])
-    value[i, :] = copy.deepcopy(nuistrace[nuis])
+    value[len(trace) + i, :] = copy.deepcopy(nuistrace[nuis])
     m = np.mean(nuistrace[nuis])
     s = np.std(nuistrace[nuis])
-#    S[len(trace) + i, 0] = m
-#    dS[len(trace) + i, 0] = s
-    S[i, 0] = m
-    dS[i, 0] = s
+    S[len(trace) + i, 0] = m
+    dS[len(trace) + i, 0] = s
     i+=1
 
 
@@ -165,7 +163,6 @@ print("LT",LT)
 print("LNP", LNP)
 args = {'pdf': pdf, 'LT': LT, 'LNP': LNP, 'mean': S}
 print("Start minimization with %s = %s" % (str(S), mpdf(S[LT:,:], args)[0]))
-
 #print("Start minimization with %s = %f" % (str(S), mpdf(S, args)))
 #print("Start minimization with dS %s" % (str(dS)))
 
@@ -184,13 +181,13 @@ print(localnuis)
 print ('PDF res x ',mpdf(res.x,args))
 
 ####do plots
-#for i in range(0, len(trace)):
-#    plt.hist(trace[i], 50)
-#    plt.axvline(res.x[i], color = 'black')
-#    plt.savefig('truthbin%i.png'%int(i))
+for i in range(0, len(trace)):
+    plt.hist(trace[i], 50)
+    plt.axvline(res.x[i], color = 'black')
+    plt.savefig('truthbin%i.png'%int(i))
 
-#    print (res.x[i])
-#    plt.close()
+    print (res.x[i])
+    plt.close()
 
 #i=0
 #for nuis in nuistrace: 
@@ -204,7 +201,7 @@ print ('PDF res x ',mpdf(res.x,args))
 
 
 import ROOT as r
-import AtlasStyle
+#import AtlasStyle
 from array import array
 
 
