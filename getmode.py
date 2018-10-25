@@ -28,7 +28,9 @@ def mpdf(x, args):
     mean = args['mean']
     LT = args['LT']
     LNP = args['LNP']
-    if len(x.shape) == 1:
+    if LT == 0:
+      A = x
+    elif len(x.shape) == 1:
       A = np.concatenate( (mean[:LT,0], x), axis = 0)
     else:
       A = np.concatenate((np.tile(mean[:LT,:], (1,x.shape[1])),x), axis = 0)
@@ -143,7 +145,11 @@ class GKDE:
     return result_diff/result
 
 print("value", value.shape)
-pdf = GKDE(value)
+LT = trace.shape[0]
+LNP = len(nuistrace)
+print("LT",LT)
+print("LNP", LNP)
+pdf = GKDE(value[LT:,:])
 
 
 #pdf = stats.gaussian_kde(value,bw_method='scott')
@@ -157,11 +163,7 @@ bounds = []
 #print ('bounds  ',bounds)
 
 # keep those first LT variables fixed in the mean
-LT = trace.shape[0]
-LNP = len(nuistrace)
-print("LT",LT)
-print("LNP", LNP)
-args = {'pdf': pdf, 'LT': LT, 'LNP': LNP, 'mean': S}
+args = {'pdf': pdf, 'LT': 0, 'LNP': LNP, 'mean': S}
 print("Start minimization with %s = %s" % (str(S), mpdf(S[LT:,:], args)[0]))
 #print("Start minimization with %s = %f" % (str(S), mpdf(S, args)))
 #print("Start minimization with dS %s" % (str(dS)))
@@ -173,7 +175,7 @@ print ('PDF S+dS  ',mpdf(S[LT:,:]+dS[LT:,:],args)[0])
 
 #res = optimize.minimize(mpdf, S, args = args, jac = True, bounds = bounds, method='L-BFGS-B', options={'ftol':10e-20,'gtol':10e-18,'maxiter': 500, 'disp': True})
 # ROOT uses gtol (it calls it EDM) 1e-3
-res = optimize.minimize(mpdf, np.zeros( (LNP, 1), dtype = np.float64 ), args = args, jac = False, method='L-BFGS-B', options={'maxiter': 200, 'disp': True})
+res = optimize.minimize(mpdf, np.zeros( (LNP, 1), dtype = np.float64 ), args = args, jac = False, method='L-BFGS-B', options={'maxiter': 200, 'disp': True, 'ftol': 0, 'gtol': 0})
 print('===================')  
 print(res)
 print('===================')  
@@ -187,9 +189,10 @@ plt.show()
 
 fig = plt.figure( figsize = (10, 6) )
 x = np.reshape(np.linspace(-2, 2, 100), (1, -1) )
-A = np.concatenate((np.tile(S[:LT,:], (1,x.shape[1])),x), axis = 0)
+#A = np.concatenate((np.tile(S[:LT,:], (1,x.shape[1])),x), axis = 0)
+A = x
 print(A.shape)
-y = np.reshape(np.exp(pdf.logpdf(A)+np.log(1e20)), (1, -1) )
+y = np.reshape(np.exp(pdf.logpdf(A)), (1, -1) )
 x = np.reshape(x, (-1))
 y = np.reshape(y, (-1))
 print(x, y)
